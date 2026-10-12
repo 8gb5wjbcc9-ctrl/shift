@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShiftLink シフト管理</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f6f8;color:#20242a}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.hidden{display:none!important}
+.app{min-height:100vh}
+.top{height:64px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:5}
+.logo{font-weight:800;font-size:20px}
+.role{font-size:13px;color:#667085;background:#f2f4f7;padding:7px 10px;border-radius:999px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 3px 14px #00000008}
+.login{max-width:430px;margin:60px auto;padding:28px}
+h1,h2,h3{margin:0 0 12px}
+.sub{color:#667085;font-size:14px;line-height:1.6}
+.field{margin:18px 0}
+label{display:block;font-weight:700;font-size:13px;margin-bottom:7px}
+input{width:100%;padding:12px 13px;border:1px solid #d0d5dd;border-radius:10px;outline:none}
+input:focus{border-color:#667085;box-shadow:0 0 0 3px #66708518}
+.primary{background:#20242a;color:#fff;padding:12px 16px;border-radius:10px;font-weight:700;width:100%}
+.secondary{background:#eef0f3;color:#20242a;padding:10px 14px;border-radius:10px;font-weight:700}
+.danger{background:#fff0f0;color:#c62828;padding:9px 12px;border-radius:9px}
+.demo{margin-top:18px;padding:13px;background:#f8fafc;border-radius:10px;font-size:12px;line-height:1.7}
+.tabs{display:flex;gap:8px;margin:18px 0}
+.tab{padding:10px 14px;background:#eef0f3;border-radius:9px;font-weight:700}
+.tab.active{background:#20242a;color:white}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.weeknav{display:flex;align-items:center;gap:8px}
+.weeknav button{background:#fff;border:1px solid #dfe3e8;padding:8px 12px;border-radius:9px}
+.gridbox{overflow:auto}
+.shiftgrid{border-collapse:separate;border-spacing:0;width:100%;min-width:850px}
+.shiftgrid th,.shiftgrid td{border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:8px;text-align:center;background:#fff}
+.shiftgrid th:first-child,.shiftgrid td:first-child{position:sticky;left:0;z-index:2;background:#fff}
+.shiftgrid th{font-size:12px;color:#667085;background:#fafafa}
+.name{font-weight:700;text-align:left!important;min-width:105px}
+.cell{min-width:95px;height:72px}
+.pref{font-size:11px;color:#667085;margin-bottom:5px}
+.shiftbtn{width:100%;height:36px;border-radius:8px;background:#f1f3f5;color:#333;font-weight:800}
+.shiftbtn.set{background:#20242a;color:white}
+.off{font-size:12px;color:#98a2b3}
+.modalbg{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
+.modal{background:#fff;border-radius:16px;padding:22px;width:min(420px,100%)}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}
+.choice button{padding:13px 5px;background:#f0f2f4;border-radius:10px;font-weight:800}
+.choice button.selected{background:#20242a;color:white}
+.modal-actions{display:flex;gap:8px}.modal-actions button{flex:1}
+.stafflist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.staffcard{padding:16px}
+.staffcard b{display:block;margin-bottom:6px}
+.pill{display:inline-block;font-size:11px;background:#eef0f3;border-radius:999px;padding:5px 8px;margin:3px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#20242a;color:#fff;padding:11px 16px;border-radius:10px;z-index:50;font-size:13px}
+.logout{background:transparent;color:#667085}
+.notice{padding:13px 15px;background:#f8fafc;border-radius:10px;font-size:13px;margin-bottom:16px}
+@media(max-width:600px){.wrap{padding:16px 10px}.login{margin:25px auto;padding:22px}.top{padding:0 14px}.top .logo{font-size:18px}}
+</style>
+</head>
+<body>
+<div id="loginPage">
+  <div class="top"><div class="logo">ShiftLink</div><div class="role">シフト管理</div></div>
+  <div class="wrap">
+    <div class="card login">
+      <h1>ログイン</h1>
+      <p class="sub">店長は店舗コード、バイトは個人アカウントでログインします。</p>
+      <div class="tabs">
+        <button class="tab active" id="managerTab" onclick="setLoginRole('manager')">店長</button>
+        <button class="tab" id="workerTab" onclick="setLoginRole('worker')">バイト</button>
+      </div>
+      <div id="managerFields">
+        <div class="field"><label>店長コード</label><input id="managerCode" placeholder="例：LARGO-4821"></div>
+        <div class="field"><label>パスワード</label><input id="managerPass" type="password" placeholder="パスワード"></div>
+      </div>
+      <div id="workerFields" class="hidden">
+        <div class="field"><label>スタッフID</label><input id="workerId" placeholder="例：tanaka01"></div>
+        <div class="field"><label>パスワード</label><input id="workerPass" type="password" placeholder="パスワード"></div>
+      </div>
+      <button class="primary" onclick="login()">ログイン</button>
+      <div class="demo">
+        <b>デモ用ログイン</b><br>
+        店長：<b>LARGO-4821</b> / <b>1234</b><br>
+        バイト：<b>tanaka01</b> / <b>1111</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="appPage" class="hidden">
+  <div class="top">
+    <div class="logo">ShiftLink</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="currentUser" class="role"></span>
+      <button class="logout" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="wrap" id="content"></div>
+</div>
+
+<div id="modalBg" class="modalbg hidden">
+  <div class="modal">
+    <h3 id="modalTitle">シフト設定</h3>
+    <p class="sub" id="modalSub"></p>
+    <div class="choice">
+      <button onclick="pickShift('早番')">早番</button>
+      <button onclick="pickShift('遅番')">遅番</button>
+      <button onclick="pickShift('通し')">通し</button>
+    </div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeModal()">キャンセル</button>
+      <button class="primary" onclick="saveModal()">設定する</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const DAYS=['月','火','水','木','金','土','日'];
+const SHIFT=['早番','遅番','通し'];
+let role='manager', modalData=null, selectedShift=null;
+const key='shiftlink_demo_v1';
+
+const defaultDB={
+  manager:{code:'LARGO-4821',pass:'1234',store:'PARLOURラルゴ'},
+  workers:[
+    {id:'tanaka01',pass:'1111',name:'田中'},
+    {id:'sato01',pass:'2222',name:'佐藤'},
+    {id:'yamada01',pass:'3333',name:'山田'},
+    {id:'suzuki01',pass:'4444',name:'鈴木'}
+  ],
+  wishes:{
+    '2026-10-05':{tanaka01:['早番'],sato01:['遅番'],yamada01:['通し']},
+    '2026-10-06':{tanaka01:['遅番'],sato01:['早番']},
+    '2026-10-07':{tanaka01:['通し'],sato01:['遅番'],suzuki01:['早番']},
+    '2026-10-08':{yamada01:['早番'],suzuki01:['通し']},
+    '2026-10-09':{tanaka01:['早番'],yamada01:['遅番']}
+  },
+  shifts:{
+    '2026-10-05':{tanaka01:'早番',sato01:'遅番',yamada01:'通し'},
+    '2026-10-06':{tanaka01:'遅番',sato01:'早番'},
+    '2026-10-07':{tanaka01:'通し',sato01:'遅番',suzuki01:'早番'},
+    '2026-10-08':{yamada01:'早番',suzuki01:'通し'},
+    '2026-10-09':{tanaka01:'早番',yamada01:'遅番'}
+  }
+};
+function load(){try{return JSON.parse(localStorage.getItem(key))||structuredClone(defaultDB)}catch(e){return structuredClone(defaultDB)}}
+function save(){localStorage.setItem(key,JSON.stringify(db))}
+let db=load();
+let weekStart=new Date('2026-10-05T00:00:00');
+
+function dateStr(d){return d.toISOString().slice(0,10)}
+function dateLabel(d){return `${d.getMonth()+1}/${d.getDate()}`}
+function weekDates(){return DAYS.map((_,i)=>{let d=new Date(weekStart);d.setDate(d.getDate()+i);return d})}
+function weekTitle(){let ds=weekDates();return `${dateLabel(ds[0])}〜${dateLabel(ds[6])}`}
+function showToast(t){const x=document.getElementById('toast');x.textContent=t;x.classList.remove('hidden');setTimeout(()=>x.classList.add('hidden'),1800)}
+function setLoginRole(r){role=r;document.getElementById('managerTab').classList.toggle('active',r==='manager');document.getElementById('workerTab').classList.toggle('active',r==='worker');document.getElementById('managerFields').classList.toggle('hidden',r!=='manager');document.getElementById('workerFields').classList.toggle('hidden',r!=='worker')}
+function login(){
+  if(role==='manager'){
+    if(document.getElementById('managerCode').value===db.manager.code && document.getElementById('managerPass').value===db.manager.pass){sessionStorage.setItem('login','manager');showApp('店長')}
+    else showToast('店長コードまたはパスワードが違います')
+  }else{
+    const id=document.getElementById('workerId').value;
+    const w=db.workers.find(x=>x.id===id && x.pass===document.getElementById('workerPass').value);
+    if(w){sessionStorage.setItem('login',id);showApp(w.name)}
+    else showToast('スタッフIDまたはパスワードが違います')
+  }
+}
+function showApp(name){document.getElementById('loginPage').classList.add('hidden');document.getElementById('appPage').classList.remove('hidden');document.getElementById('currentUser').textContent=name;render()}
+function logout(){sessionStorage.removeItem('login');location.reload()}
+function render(){const login=sessionStorage.getItem('login');if(!login)return; if(login==='manager')renderManager();else renderWorker(login)}
+function navHtml(){return `<div class="toolbar"><div class="weeknav"><button onclick="moveWeek(-7)">‹</button><b>${weekTitle()}</b><button onclick="moveWeek(7)">›</button></div><button class="secondary" onclick="resetWeek()">今週</button></div>`}
+function moveWeek(n){weekStart.setDate(weekStart.getDate()+n);render()}
+function resetWeek(){weekStart=new Date('2026-10-05T00:00:00');render()}
+
+function renderManager(){
+ const dates=weekDates();
+ let rows=db.workers.map(w=>{
+   return `<tr><td class="name">${w.name}<div class="sub">${w.id}</div></td>`+
+   dates.map(d=>{
+     const ds=dateStr(d), wish=(db.wishes[ds]?.[w.id]||[]), sh=db.shifts[ds]?.[w.id];
+     const pref=wish.length?`希望: ${wish.join('・')}`:'希望なし';
+     const warning=sh && wish.length && !wish.includes(sh);
+     return `<td class="cell" onclick="openShift('${w.id}','${ds}')"><div class="pref">${pref}</div><button class="shiftbtn ${sh?'set':''}">${sh||'未設定'}</button>${warning?'<div style="font-size:10px;color:#c62828;margin-top:3px">希望外</div>':''}</td>`
+   }).join('')+'</tr>'
+ }).join('');
+ document.getElementById('content').innerHTML=`
+   <div class="toolbar"><div><h1>店長側シフト管理</h1><div class="sub">${db.manager.store}｜手動でシフトを作成</div></div></div>
+   ${navHtml()}
+   <div class="notice">各セルの上にスタッフの希望を表示しています。セルをタップして<strong>早番・遅番・通し</strong>を設定できます。空欄は休みです。</div>
+   <div class="card gridbox"><table class="shiftgrid"><thead><tr><th class="name">スタッフ</th>${dates.map(d=>`<th>${DAYS[d.getDay()===0?6:d.getDay()-1]}<br>${dateLabel(d)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+   <div style="margin-top:16px;display:flex;gap:8px"><button class="primary" style="max-width:220px" onclick="showToast('シフトを確定しました')">シフトを確定する</button><button class="secondary" onclick="renderStaff()">スタッフ管理</button></div>
+ `;
+}
+function openShift(id,ds){
+ modalData={id,ds};selectedShift=db.shifts[ds]?.[id]||null;
+ const w=db.workers.find(x=>x.id===id);
+ document.getElementById('modalTitle').textContent=`${w.name}｜${ds}`;
+ document.getElementById('modalSub').textContent=`希望：${(db.wishes[ds]?.[id]||[]).join('・')||'なし'}`;
+ document.querySelectorAll('.choice button').forEach(b=>b.classList.toggle('selected',b.textContent===selectedShift));
+ document.getElementById('modalBg').classList.remove('hidden')
+}
+function pickShift(s){selectedShift=s;document.querySelectorAll('.choice button').forEach(b=>b.classList.toggle('selected',b.textContent===s))}
+function saveModal(){if(!modalData)return;db.shifts[modalData.ds]??={};if(selectedShift)db.shifts[modalData.ds][modalData.id]=selectedShift;else delete db.shifts[modalData.ds][modalData.id];save();closeModal();render();showToast('シフトを保存しました')}
+function closeModal(){document.getElementById('modalBg').classList.add('hidden')}
+
+function renderStaff(){
+ document.getElementById('content').innerHTML=`<div class="toolbar"><div><h1>スタッフ管理</h1><div class="sub">現在登録されているスタッフ</div></div><button class="secondary" onclick="render()">シフト表へ戻る</button></div><div class="stafflist">${db.workers.map(w=>`<div class="card staffcard"><b>${w.name}</b><span class="sub">スタッフID：${w.id}</span><div style="margin-top:10px"><span class="pill">個別ログイン可</span></div></div>`).join('')}</div>`;
+}
+
+function renderWorker(id){
+ const w=db.workers.find(x=>x.id===id), dates=weekDates();
+ const cells=dates.map(d=>{
+   const ds=dateStr(d), wish=db.wishes[ds]?.[id]||[], sh=db.shifts[ds]?.[id];
+   return `<div class="card" style="padding:14px"><div style="font-weight:800">${DAYS[d.getDay()===0?6:d.getDay()-1]} ${dateLabel(d)}</div><div class="sub" style="margin:5px 0 10px">${sh?'確定：'+sh:'確定シフトなし'}</div><div style="display:flex;flex-wrap:wrap;gap:5px">${SHIFT.map(s=>`<button class="pill" style="border:0;cursor:pointer;background:${wish.includes(s)?'#20242a':'#eef0f3'};color:${wish.includes(s)?'white':'#333'}" onclick="toggleWish('${id}','${ds}','${s}')">${s}</button>`).join('')}</div><div class="sub" style="margin-top:7px">希望未選択＝休み</div></div>`
+ }).join('');
+ document.getElementById('content').innerHTML=`
+   <div><h1>バイト側 希望提出</h1><div class="sub">${w.name}さん｜希望する日だけ選択してください</div></div>
+   ${navHtml()}
+   <div class="notice">働きたい日の<strong>早番・遅番・通し</strong>を選択してください。何も選ばなかった日は自動的に休み扱いになります。複数の勤務形態を希望する日も選択できます。</div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">${cells}</div>
+   <button class="primary" style="margin-top:16px;max-width:240px" onclick="save();showToast('希望を保存しました')">希望を提出する</button>
+ `;
+}
+function toggleWish(id,ds,s){
+ db.wishes[ds]??={};db.wishes[ds][id]??=[];
+ const a=db.wishes[ds][id],i=a.indexOf(s);
+ if(i>=0)a.splice(i,1);else a.push(s);
+ if(!a.length)delete db.wishes[ds][id];
+ save();renderWorker(id)
+}
+
+window.addEventListener('load',()=>{
+ const login=sessionStorage.getItem('login');
+ if(login){document.getElementById('loginPage').classList.add('hidden');document.getElementById('appPage').classList.remove('hidden');document.getElementById('currentUser').textContent=login==='manager'?'店長':(db.workers.find(w=>w.id===login)?.name||'スタッフ');render()}
+});
+</script>
+</body>
+</html>
